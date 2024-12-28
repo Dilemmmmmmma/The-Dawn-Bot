@@ -1,9 +1,9 @@
 import asyncio
 import json
 import random
-
+import base64
 import names
-
+import os
 from datetime import datetime, timezone
 from typing import Literal, Tuple, Any
 from curl_cffi.requests import AsyncSession
@@ -160,6 +160,13 @@ class DawnExtensionAPI:
     ) -> Tuple[str | int, bool, str | int] | Tuple[str, bool] | Tuple[str, bool, str]:
         response = await captcha_solver.solve(image)
         return response
+
+    @staticmethod
+    async def solve_puzzle1(
+        image: str,
+    ) -> Tuple[str | int, bool, str | int] | Tuple[str, bool] | Tuple[str, bool, str]:
+        answer, solved = await captcha_solver.solvecaps(image)
+        return (answer, solved)
 
     @staticmethod
     async def report_invalid_puzzle(task_id: int | str) -> None:
