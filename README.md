@@ -1,17 +1,8 @@
 # 🌅 Dawn Extension Bot [v1.6]
 
-<div align="center">
-  <img src="./console/images/console.png" alt="Dawn Extension Bot Console" width="600"/>
-  
-  <p align="center">
-    <a href="https://t.me/JamBitPY">
-      <img src="https://img.shields.io/badge/Telegram-Channel-blue?style=for-the-badge&logo=telegram" alt="Telegram Channel">
-    </a>
-    <a href="https://t.me/+u7hWfz0WqsFkNmMy">
-      <img src="https://img.shields.io/badge/Telegram-Chat-blue?style=for-the-badge&logo=telegram" alt="Telegram Chat">
-    </a>
-  </p>
-</div>
+ - fork：https://github.com/Jaammerr/The-Dawn-Bot
+ - 在https://github.com/wyq000 大佬的基础上升级1.6
+ - 支持本地识别不需要配置(2captcha 或 anticaptcha)
 
 ## 📋 Table of Contents
 - [功能](#-功能)
