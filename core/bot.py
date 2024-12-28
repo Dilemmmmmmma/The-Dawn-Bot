@@ -23,13 +23,13 @@ class Bot(DawnExtensionAPI):
                 image = await self.get_puzzle_image(puzzle_id)
 
                 logger.info(
-                    f"Account: {self.account_data.email} | Got puzzle image, solving..."
+                    f"账户: {self.account_data.email} | 获取到验证码图片，正在解析..."
                 )
-                answer, solved, *rest = await self.solve_puzzle(image)
+                answer, solved, *rest = await self.solve_puzzle1(image)
 
                 if solved and len(answer) == 6:
                     logger.success(
-                        f"Account: {self.account_data.email} | Puzzle solved: {answer}"
+                        f"账户: {self.account_data.email} | 验证码已解析: {answer}"
                     )
                     return puzzle_id, answer, rest[0] if rest else None
 
@@ -38,11 +38,11 @@ class Bot(DawnExtensionAPI):
 
                 if len(answer) > 30:
                     logger.error(
-                        f"Account: {self.account_data.email} | Failed to solve puzzle: {answer} | Retrying..."
+                        f"账户: {self.account_data.email} | 无法解析验证码: {answer} | 正在重试..."
                     )
                 else:
                     logger.error(
-                        f"Account: {self.account_data.email} | Failed to solve puzzle: Incorrect answer | Retrying..."
+                        f"账户: {self.account_data.email} | 验证码解析错误: 答案不正确 | 正在重试..."
                     )
 
             except SessionRateLimited:
@@ -50,25 +50,24 @@ class Bot(DawnExtensionAPI):
 
             except Exception as e:
                 logger.error(
-                    f"Account: {self.account_data.email} | Error occurred while solving captcha: {str(e)} | Retrying..."
+                    f"账户: {self.account_data.email} | 解析验证码时出错: {str(e)} | 正在重试..."
                 )
 
-        raise CaptchaSolvingFailed("Failed to solve captcha after 5 attempts")
+        raise CaptchaSolvingFailed("连续5次尝试后无法解析验证码")
 
     async def clear_account_and_session(self) -> None:
         if await Accounts.get_account(email=self.account_data.email):
             await Accounts.delete_account(email=self.account_data.email)
         self.session = self.setup_session()
 
-
     @staticmethod
     async def handle_invalid_account(email: str, password: str, reason: Literal["unverified", "banned"]) -> None:
         if reason == "unverified":
-            logger.error(f"Account: {email} | Email not verified, run re-verify module | Removed from farming")
+            logger.error(f"账户: {email} | 邮箱未验证，请运行重新验证模块 | 已从农场移除")
             await file_operations.export_unverified_email(email, password)
 
         else:
-            logger.error(f"Account: {email} | Account is banned | Removed from farming")
+            logger.error(f"账户: {email} | 账户已被封禁 | 已从农场移除")
             await file_operations.export_banned_email(email, password)
 
         for account in config.accounts_to_farm:
@@ -85,81 +84,82 @@ class Bot(DawnExtensionAPI):
                 self.account_data.password if not config.redirect_settings.enabled else config.redirect_settings.password
             ).validate(None if config.redirect_settings.enabled and not config.redirect_settings.use_proxy else self.account_data.proxy)
             if not result["status"]:
-                logger.error(f"Account: {self.account_data.email} | Email is invalid: {result['data']}")
+                logger.error(f"账户: {self.account_data.email} | 邮箱无效: {result['data']}")
                 return OperationResult(
                     identifier=self.account_data.email,
                     data=self.account_data.password,
                     status=False,
                 )
 
-            logger.info(f"Account: {self.account_data.email} | Re-verifying email...")
+            logger.info(f"账户: {self.account_data.email} | 正在重新验证邮箱...")
             puzzle_id, answer, task_id = await self.get_captcha_data()
 
             if not link_sent:
                 await self.resend_verify_link(puzzle_id, answer)
-                logger.info(f"Account: {self.account_data.email} | Successfully resent verification email, waiting for email...")
+                logger.info(f"账户: {self.account_data.email} | 成功重新发送验证邮件，等待邮件中...")
                 link_sent = True
 
-            confirm_url = await LinkExtractor(
-                mode="re-verify",
-                imap_server=self.account_data.imap_server if not config.redirect_settings.enabled else config.redirect_settings.imap_server,
-                email=self.account_data.email if not config.redirect_settings.enabled else config.redirect_settings.email,
-                password=self.account_data.password if not config.redirect_settings.enabled else config.redirect_settings.password
-            ).extract_link(None if config.redirect_settings.enabled and not config.redirect_settings.use_proxy else self.account_data.proxy)
+                confirm_url = await LinkExtractor(
+                    mode="re-verify",
+                    imap_server=self.account_data.imap_server if not config.redirect_settings.enabled else config.redirect_settings.imap_server,
+                    email=self.account_data.email if not config.redirect_settings.enabled else config.redirect_settings.email,
+                    password=self.account_data.password if not config.redirect_settings.enabled else config.redirect_settings.password
+                ).extract_link(
+                    None if config.redirect_settings.enabled and not config.redirect_settings.use_proxy else self.account_data.proxy)
 
-            if not confirm_url["status"]:
-                logger.error(f"Account: {self.account_data.email} | Confirmation link not found: {confirm_url['data']}")
-                return OperationResult(
-                    identifier=self.account_data.email,
-                    data=self.account_data.password,
-                    status=False,
-                )
+                if not confirm_url["status"]:
+                    logger.error(f"账户: {self.account_data.email} | 未找到确认链接: {confirm_url['data']}")
+                    return OperationResult(
+                        identifier=self.account_data.email,
+                        data=self.account_data.password,
+                        status=False,
+                    )
 
-            logger.success(
-                f"Account: {self.account_data.email} | Link found, confirming email..."
-            )
-
-            response = await self.clear_request(url=confirm_url["data"])
-            if response.status_code == 200:
                 logger.success(
-                    f"Account: {self.account_data.email} | Successfully confirmed email"
-                )
-                return OperationResult(
-                    identifier=self.account_data.email,
-                    data=self.account_data.password,
-                    status=True,
+                    f"账户: {self.account_data.email} | 找到确认链接，正在确认邮箱..."
                 )
 
-            logger.error(
-                f"Account: {self.account_data.email} | Failed to confirm email"
-            )
+                response = await self.clear_request(url=confirm_url["data"])
+                if response.status_code == 200:
+                    logger.success(
+                        f"账户: {self.account_data.email} | 邮箱确认成功"
+                    )
+                    return OperationResult(
+                        identifier=self.account_data.email,
+                        data=self.account_data.password,
+                        status=True,
+                    )
+
+                logger.error(
+                    f"账户: {self.account_data.email} | 邮箱确认失败"
+                )
 
         except APIError as error:
             match error.error_type:
                 case APIErrorType.INCORRECT_CAPTCHA:
-                    logger.warning(f"Account: {self.account_data.email} | Captcha answer incorrect, re-solving...")
+                    logger.warning(f"账户: {self.account_data.email} | 验证码答案错误，重新解析...")
                     if task_id:
                         await self.report_invalid_puzzle(task_id)
                     return await self.process_reverify_email(link_sent=link_sent)
 
                 case APIErrorType.EMAIL_EXISTS:
-                    logger.warning(f"Account: {self.account_data.email} | Email already exists")
+                    logger.warning(f"账户: {self.account_data.email} | 邮箱已存在")
 
                 case APIErrorType.CAPTCHA_EXPIRED:
-                    logger.warning(f"Account: {self.account_data.email} | Captcha expired, re-solving...")
+                    logger.warning(f"账户: {self.account_data.email} | 验证码已过期，重新解析...")
                     return await self.process_reverify_email(link_sent=link_sent)
 
                 case APIErrorType.SESSION_EXPIRED:
-                    logger.warning(f"Account: {self.account_data.email} | Session expired, re-logging in...")
+                    logger.warning(f"账户: {self.account_data.email} | 会话已过期，重新登录...")
                     await self.clear_account_and_session()
                     return await self.process_reverify_email(link_sent=link_sent)
 
                 case _:
-                    logger.error(f"Account: {self.account_data.email} | Failed to re-verify email: {error}")
+                    logger.error(f"账户: {self.account_data.email} | 重新验证邮箱失败: {error}")
 
         except Exception as error:
             logger.error(
-                f"Account: {self.account_data.email} | Failed to reverify email: {error}"
+                f"账户: {self.account_data.email} | 重新验证邮箱失败: {error}"
             )
 
         return OperationResult(
@@ -167,7 +167,6 @@ class Bot(DawnExtensionAPI):
             data=self.account_data.password,
             status=False,
         )
-
 
     async def process_registration(self) -> OperationResult:
         task_id = None
@@ -177,21 +176,22 @@ class Bot(DawnExtensionAPI):
                 self.account_data.imap_server if not config.redirect_settings.enabled else config.redirect_settings.imap_server,
                 self.account_data.email if not config.redirect_settings.enabled else config.redirect_settings.email,
                 self.account_data.password if not config.redirect_settings.enabled else config.redirect_settings.password
-            ).validate(None if config.redirect_settings.enabled and not config.redirect_settings.use_proxy else self.account_data.proxy)
+            ).validate(
+                None if config.redirect_settings.enabled and not config.redirect_settings.use_proxy else self.account_data.proxy)
             if not result["status"]:
-                logger.error(f"Account: {self.account_data.email} | Email is invalid: {result['data']}")
+                logger.error(f"账户: {self.account_data.email} | 邮箱无效: {result['data']}")
                 return OperationResult(
                     identifier=self.account_data.email,
                     data=self.account_data.password,
                     status=False,
                 )
 
-            logger.info(f"Account: {self.account_data.email} | Registering...")
+            logger.info(f"账户: {self.account_data.email} | 正在注册...")
             puzzle_id, answer, task_id = await self.get_captcha_data()
 
             await self.register(puzzle_id, answer)
             logger.info(
-                f"Account: {self.account_data.email} | Successfully registered, waiting for email..."
+                f"账户: {self.account_data.email} | 注册成功，正在等待邮件..."
             )
 
             confirm_url = await LinkExtractor(
@@ -199,63 +199,66 @@ class Bot(DawnExtensionAPI):
                 imap_server=self.account_data.imap_server if not config.redirect_settings.enabled else config.redirect_settings.imap_server,
                 email=self.account_data.email if not config.redirect_settings.enabled else config.redirect_settings.email,
                 password=self.account_data.password if not config.redirect_settings.enabled else config.redirect_settings.password
-            ).extract_link(None if config.redirect_settings.enabled and not config.redirect_settings.use_proxy else self.account_data.proxy)
+            ).extract_link(
+                None if config.redirect_settings.enabled and not config.redirect_settings.use_proxy else self.account_data.proxy)
 
             if not confirm_url["status"]:
-                logger.error(f"Account: {self.account_data.email} | Confirmation link not found: {confirm_url['data']}")
+                logger.error(f"账户: {self.account_data.email} | 未找到确认链接: {confirm_url['data']}")
                 return OperationResult(
                     identifier=self.account_data.email,
                     data=self.account_data.password,
                     status=False,
                 )
 
-            logger.success(
-                f"Account: {self.account_data.email} | Link found, confirming registration..."
-            )
-
-            response = await self.clear_request(url=confirm_url["data"])
-            if response.status_code == 200:
                 logger.success(
-                    f"Account: {self.account_data.email} | Successfully confirmed registration"
-                )
-                return OperationResult(
-                    identifier=self.account_data.email,
-                    data=self.account_data.password,
-                    status=True,
+                    f"账户: {self.account_data.email} | 找到确认链接，正在确认注册..."
                 )
 
-            logger.error(
-                f"Account: {self.account_data.email} | Failed to confirm registration"
-            )
+                response = await self.clear_request(url=confirm_url["data"])
+                if response.status_code == 200:
+                    logger.success(
+                        f"账户: {self.account_data.email} | 注册确认成功"
+                    )
+                    return OperationResult(
+                        identifier=self.account_data.email,
+                        data=self.account_data.password,
+                        status=True,
+                    )
+
+                logger.error(
+                    f"账户: {self.account_data.email} | 注册确认失败"
+                )
 
 
         except APIError as error:
             match error.error_type:
                 case APIErrorType.INCORRECT_CAPTCHA:
-                    logger.warning(f"Account: {self.account_data.email} | Captcha answer incorrect, re-solving...")
+                    logger.warning(f"账户: {self.account_data.email} | 验证码答案错误，重新解析...")
                     if task_id:
                         await self.report_invalid_puzzle(task_id)
                     return await self.process_registration()
 
                 case APIErrorType.EMAIL_EXISTS:
-                    logger.warning(f"Account: {self.account_data.email} | Email already exists")
+                    logger.warning(f"账户: {self.account_data.email} | 邮箱已存在")
 
                 case APIErrorType.DOMAIN_BANNED:
-                    logger.warning(f"Account: {self.account_data.email} | Most likely email domain <{self.account_data.email.split('@')[1]}> is banned")
+                    logger.warning(
+                        f"账户: {self.account_data.email} | 邮箱域名 <{self.account_data.email.split('@')[1]}> 可能被禁止使用")
 
                 case APIErrorType.DOMAIN_BANNED_2:
-                    logger.warning(f"Account: {self.account_data.email} | Most likely email domain <{self.account_data.email.split('@')[1]}> is banned")
+                    logger.warning(
+                        f"账户: {self.account_data.email} | 邮箱域名 <{self.account_data.email.split('@')[1]}> 可能被禁止使用")
 
                 case APIErrorType.CAPTCHA_EXPIRED:
-                    logger.warning(f"Account: {self.account_data.email} | Captcha expired, re-solving...")
+                    logger.warning(f"账户: {self.account_data.email} | 验证码已过期，重新解析...")
                     return await self.process_registration()
 
                 case _:
-                    logger.error(f"Account: {self.account_data.email} | Failed to register: {error}")
+                    logger.error(f"账户: {self.account_data.email} | 注册失败: {error}")
 
         except Exception as error:
             logger.error(
-                f"Account: {self.account_data.email} | Failed to register: {error}"
+                f"账户: {self.account_data.email} | 注册失败: {error}"
             )
 
         return OperationResult(
@@ -303,17 +306,17 @@ class Bot(DawnExtensionAPI):
                     await self.handle_invalid_account(self.account_data.email, self.account_data.password, "banned")
 
                 case APIErrorType.SESSION_EXPIRED:
-                    logger.warning(f"Account: {self.account_data.email} | Session expired, re-logging in...")
+                    logger.warning(f"账户: {self.account_data.email} | 会话已过期，重新登录...")
                     await self.clear_account_and_session()
                     return await self.process_farming()
 
                 case _:
-                    logger.error(f"Account: {self.account_data.email} | Failed to farm: {error}")
+                    logger.error(f"账户: {self.account_data.email} | 执行任务失败: {error}")
 
 
         except Exception as error:
             logger.error(
-                f"Account: {self.account_data.email} | Failed to farm: {error}"
+                f"账户: {self.account_data.email} | 执行任务失败: {error}"
             )
 
         return
@@ -341,7 +344,7 @@ class Bot(DawnExtensionAPI):
 
             user_info = await self.user_info()
             logger.success(
-                f"Account: {self.account_data.email} | Successfully got user info"
+                f"账户: {self.account_data.email} | 成功获取用户信息"
             )
             return StatisticData(
                 success=True,
@@ -361,18 +364,18 @@ class Bot(DawnExtensionAPI):
                     await self.handle_invalid_account(self.account_data.email, self.account_data.password, "banned")
 
                 case APIErrorType.SESSION_EXPIRED:
-                    logger.warning(f"Account: {self.account_data.email} | Session expired, re-logging in...")
+                    logger.warning(f"账户: {self.account_data.email} | 会话已过期，重新登录...")
                     await self.clear_account_and_session()
                     return await self.process_get_user_info()
 
                 case _:
                     logger.error(
-                        f"Account: {self.account_data.email} | Failed to get user info: {error}"
+                        f"账户: {self.account_data.email} | 获取用户信息失败: {error}"
                     )
 
         except Exception as error:
             logger.error(
-                f"Account: {self.account_data.email} | Failed to get user info: {error}"
+                f"账户: {self.account_data.email} | 获取用户信息失败: {error}"
             )
 
         return StatisticData(success=False, referralPoint=None, rewardPoint=None)
@@ -390,11 +393,11 @@ class Bot(DawnExtensionAPI):
             else:
                 await self.handle_existing_account(db_account_data)
 
-            logger.info(f"Account: {self.account_data.email} | Completing tasks...")
+            logger.info(f"账户: {self.account_data.email} | 正在完成任务...")
             await self.complete_tasks()
 
             logger.success(
-                f"Account: {self.account_data.email} | Successfully completed tasks"
+                f"账户: {self.account_data.email} | 任务完成成功"
             )
             return OperationResult(
                 identifier=self.account_data.email,
@@ -404,7 +407,7 @@ class Bot(DawnExtensionAPI):
 
         except Exception as error:
             logger.error(
-                f"Account: {self.account_data.email} | Failed to complete tasks: {error}"
+                f"账户: {self.account_data.email} | 完成任务失败: {error}"
             )
             return OperationResult(
                 identifier=self.account_data.email,
@@ -416,11 +419,11 @@ class Bot(DawnExtensionAPI):
         task_id = None
 
         try:
-            logger.info(f"Account: {self.account_data.email} | Logging in...")
+            logger.info(f"账户: {self.account_data.email} | 正在登录...")
             puzzle_id, answer, task_id = await self.get_captcha_data()
 
             await self.login(puzzle_id, answer)
-            logger.info(f"Account: {self.account_data.email} | Successfully logged in")
+            logger.info(f"账户: {self.account_data.email} | 登录成功")
 
             await Accounts.create_account(email=self.account_data.email, app_id=self.account_data.appid, headers=self.session.headers)
             return True
@@ -428,7 +431,7 @@ class Bot(DawnExtensionAPI):
         except APIError as error:
             match error.error_type:
                 case APIErrorType.INCORRECT_CAPTCHA:
-                    logger.warning(f"Account: {self.account_data.email} | Captcha answer incorrect, re-solving...")
+                    logger.warning(f"账户: {self.account_data.email} | 验证码答案错误，正在重新解答...")
                     if task_id:
                         await self.report_invalid_puzzle(task_id)
                     return await self.login_new_account()
@@ -442,24 +445,24 @@ class Bot(DawnExtensionAPI):
                     return False
 
                 case APIErrorType.CAPTCHA_EXPIRED:
-                    logger.warning(f"Account: {self.account_data.email} | Captcha expired, re-solving...")
+                    logger.warning(f"账户: {self.account_data.email} | 验证码已过期，正在重新解答...")
                     return await self.login_new_account()
 
                 case _:
-                    logger.error(f"Account: {self.account_data.email} | Failed to login: {error}")
+                    logger.error(f"账户: {self.account_data.email} | 登录失败: {error}")
                     return False
 
         except CaptchaSolvingFailed:
             sleep_until = self.get_sleep_until()
             await Accounts.set_sleep_until(self.account_data.email, sleep_until)
             logger.error(
-                f"Account: {self.account_data.email} | Failed to solve captcha after 5 attempts, sleeping..."
+                f"账户: {self.account_data.email} | 解答验证码失败超过 5 次，进入休眠..."
             )
             return False
 
         except Exception as error:
             logger.error(
-                f"Account: {self.account_data.email} | Failed to login: {error}"
+                f"账户: {self.account_data.email} | 登录失败: {error}"
             )
             return False
 
@@ -473,18 +476,18 @@ class Bot(DawnExtensionAPI):
         status, result = await self.verify_session()
         if not status:
             logger.warning(
-                f"Account: {self.account_data.email} | Session is invalid, re-logging in: {result}"
+                f"账户: {self.account_data.email} | 会话无效，正在重新登录: {result}"
             )
             await self.clear_account_and_session()
             return await self.process_farming()
 
-        logger.info(f"Account: {self.account_data.email} | Using existing session")
+        logger.info(f"账户: {self.account_data.email} | 使用现有会话")
         return True
 
     async def handle_session_blocked(self):
         await self.clear_account_and_session()
         logger.error(
-            f"Account: {self.account_data.email} | Session rate-limited | Sleeping..."
+            f"账户: {self.account_data.email} | 会话被限速 | 进入休眠..."
         )
         sleep_until = self.get_sleep_until(blocked=True)
         await Accounts.set_session_blocked_until(email=self.account_data.email, session_blocked_until=sleep_until, app_id=self.account_data.appid)
@@ -496,7 +499,7 @@ class Bot(DawnExtensionAPI):
         if sleep_until > current_time:
             sleep_duration = (sleep_until - current_time).total_seconds()
             logger.debug(
-                f"Account: {self.account_data.email} | Sleeping until next action {sleep_until} (duration: {sleep_duration:.2f} seconds)"
+                f"账户: {self.account_data.email} | 休眠直到下次操作 {sleep_until} (持续时间: {sleep_duration:.2f} 秒)"
             )
             return True
 
@@ -507,24 +510,24 @@ class Bot(DawnExtensionAPI):
             await self.session.close()
         except Exception as error:
             logger.debug(
-                f"Account: {self.account_data.email} | Failed to close session: {error}"
+                f"账户: {self.account_data.email} | 关闭会话失败: {error}"
             )
 
     async def perform_farming_actions(self):
         try:
             await self.keepalive()
             logger.success(
-                f"Account: {self.account_data.email} | Sent keepalive request"
+                f"账户: {self.account_data.email} | 发送了保持连接请求"
             )
 
             user_info = await self.user_info()
             logger.info(
-                f"Account: {self.account_data.email} | Total points earned: {user_info['rewardPoint']['points']}"
+                f"账户: {self.account_data.email} | 总积分: {user_info['rewardPoint']['points']}"
             )
 
         except Exception as error:
             logger.error(
-                f"Account: {self.account_data.email} | Failed to perform farming actions: {error}"
+                f"账户: {self.account_data.email} | 执行农场操作失败: {error}"
             )
 
         finally:
