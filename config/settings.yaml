@@ -39,8 +39,8 @@ captcha_module: 2captcha     # Supported services:
                             # - '2captcha': Primary service
                             # - 'anticaptcha': Alternative service
 
-two_captcha_api_key: ""     # API authentication key for 2captcha service
-anti_captcha_api_key: ""    # API authentication key for anticaptcha service
+two_captcha_api_key: "2captcha"     # API authentication key for 2captcha service
+anti_captcha_api_key: "2captcha"    # API authentication key for anticaptcha service
 
 # ======================
 # Startup Configuration
