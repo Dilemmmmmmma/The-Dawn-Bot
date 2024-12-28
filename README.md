@@ -14,12 +14,12 @@
 </div>
 
 ## 📋 Table of Contents
-- [Features](#-features)
-- [Requirements](#-requirements)
-- [Installation](#-installation)
-- [Configuration](#%EF%B8%8F-configuration)
-- [Usage](#-usage)
-- [Troubleshooting](#-troubleshooting)
+- [功能](#-功能)
+- [运行环境](#-运行环境)
+- [安装指南](#-安装指南)
+- [配置文件](#%EF%B8%8F-配置文件)
+- [使用方法](#-使用方法)
+- [常见问题](#-常见问题)
 
 ## 🚀 功能
 
