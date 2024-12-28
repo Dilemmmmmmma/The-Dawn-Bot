@@ -21,102 +21,101 @@
 - [Usage](#-usage)
 - [Troubleshooting](#-troubleshooting)
 
-## 🚀 Features
+## 🚀 功能
 
-- ✨ **Account Management**
-  - ✅ Automatic account registration and login
-  - 📧 Smart account reverification system
-  - 🛡️ Token-based authentication storage
+- ✨ **账号管理**
+  - ✅ 自动账号注册和登录
+  - 📧 智能账号重新验证系统
+  - 🛡️ 基于令牌的身份验证存储
   
-- 🤖 **Automation**
-  - 🌾 Intelligent task completion
-  - 💰 Optimized point farming
-  - 🔄 Advanced keepalive system
+- 🤖 **自动化**
+  - 🌾 智能任务完成
+  - 💰 优化积分获取
+  - 🔄 高级保活机制
   
-- 📊 **Analytics & Export**
-  - 📈 Comprehensive account statistics
-  - 📉 Banned account tracking
-  - 📋 Unverified account monitoring
+- 📊 **统计与导出**
+  - 📈 全面的账号统计
+  - 📉 被封账号跟踪
+  - 📋 未验证账号监控
   
-- 🔒 **Security**
-  - 🧩 Advanced captcha solving integration
-  - 🌐 Proxy support (HTTP/SOCKS5)
-  - 🔐 Secure email integration
+- 🔒 **安全**
+  - 🧩 高级验证码破解集成
+  - 🌐 支持代理 (HTTP/SOCKS5)
+  - 🔐 安全的邮箱集成
 
-## 💻 Requirements
+## 💻 运行环境
 
-- Python 3.11 or higher
-- Stable internet connection
-- Valid email accounts
-- Working proxies (HTTP/SOCKS5)
-- Captcha service subscription (2captcha/anticaptcha)
+- Python 3.11 或更高版本
+- 稳定的互联网连接
+- 有效的邮箱账号
+- 可用代理 (HTTP/SOCKS5)
+- 验证码服务订阅 (2captcha 或 anticaptcha)
 
-## 🛠️ Installation
+## 🛠️ 安装指南
 
-1. **Clone the Repository**
+1. **克隆仓库**
    ```bash
-   git clone [repository URL]
+   git clone [仓库链接]
    ```
 
-2. **Set Up Virtual Environment**
+2. **创建虚拟环境**
    ```bash
    python -m venv venv
    source venv/Scripts/activate  # Windows
    source venv/bin/activate      # Unix/MacOS
    ```
 
-3. **Install Dependencies**
+3. **安装依赖**
    ```bash
    pip install -r requirements.txt
    ```
 
-## ⚙️ Configuration
+## ⚙️ 配置文件
 
-### 📁 settings.yaml
+### 📁 settings.yaml 示例
 
 ```yaml
-# Core Configuration
-threads: 30                    # Concurrent operation threads (min: 1)
-keepalive_interval: 120        # Keepalive signal interval (seconds)
-referral_codes:               # Multiple referral code support
-  - ""                        # Add your codes here
+# 核心配置
+threads: 30                    # 并发线程数 (最小值: 1)
+keepalive_interval: 120        # 保活信号间隔 (秒)
+referral_codes:               # 支持多个推荐码
+  - ""                        # 在此添加推荐码
 
-# Mail Redirect Settings
+# 邮件重定向设置
 redirect_settings:
-  enabled: false              # Enable/disable mail redirection
-  email: "test@gmail.com"     # Redirect email address
-  password: "password"        # Email password
+  enabled: false              # 启用/禁用邮件重定向
+  email: "test@gmail.com"     # 重定向邮箱地址
+  password: "password"        # 邮箱密码
   imap_server: "imap.gmail.com"
-  use_proxy: true            # Use proxy for email operations
+  use_proxy: true            # 是否为邮件操作使用代理
 
-# Captcha Configuration
-captcha_module: 2captcha      # Select: '2captcha' or 'anticaptcha'
-two_captcha_api_key: ""       # 2captcha API key
-anti_captcha_api_key: ""      # Anticaptcha API key
+# 验证码配置
+captcha_module: 2captcha      # 选择: '2captcha' 或 'anticaptcha'
+two_captcha_api_key: ""       # 2captcha API 密钥
+anti_captcha_api_key: ""      # Anticaptcha API 密钥
 
-# Startup Settings
+# 启动延迟设置
 delay_before_start:
-  min: 2                      # Minimum startup delay (seconds)
-  max: 3                      # Maximum startup delay (seconds)
+  min: 2                      # 最小启动延迟 (秒)
+  max: 3                      # 最大启动延迟 (秒)
 
-# Email Provider Settings
+# 邮箱提供商设置
 imap_settings:
-  # Global Providers
+  # 全球服务商
   gmail.com: imap.gmail.com
   yahoo.com: imap.mail.yahoo.com
   outlook.com: imap-mail.outlook.com
   hotmail.com: imap-mail.outlook.com
   icloud.com: imap.mail.me.com
   
-  # Regional Providers
+  # 地区服务商
   mail.ru: imap.mail.ru
   rambler.ru: imap.rambler.ru
   gmx.com: imap.gmx.com
   onet.pl: imap.poczta.onet.pl
 ```
 
-### 📁 Input Files Structure
-
+### 📁 输入文件结构
 #### accounts/register.txt
 ```
 email:password
@@ -142,43 +141,37 @@ http://ip:port:user:pass
 socks5://user:pass@ip:port
 ```
 
-## 🚀 Usage
+## 🚀 使用方法
 
-1. Configure all necessary files as described above
-2. Start the bot:
+1. 按上述描述配置所有必要文件
+2. 启动机器人：
    ```bash
    python run.py
    ```
 
-## ⚠️ Important Notes
+## ⚠️ 注意事项
 
-- 🕒 Recommended keepalive interval: 120 seconds
-- 📧 Gmail users: Use App-Specific Passwords
-- 🔄 Unverified accounts can be reverified using the register module
-- 💾 Authorization tokens are stored in local database
-- 🤖 External captcha services required (2captcha/anticaptcha)
+- 🕒 建议的保活间隔：120 秒
+- 📧 Gmail 用户：请使用应用专用密码
+- 🔄 未验证的账号可以使用注册模块重新验证
+- 💾 授权令牌存储在本地数据库中
+- 🤖 不再需要 ！！！！！！！！！外部验证码服务 (2captcha 或 anticaptcha) 
 
-## 🔧 Troubleshooting
+## 🔧 常见问题
 
-### Common Issues and Solutions
+### 常见问题及解决方法
 
-#### 📧 Email Verification Failed
-- Verify IMAP settings in settings.yaml
-- Check email provider's security settings
-- Ensure app-specific password for Gmail
+#### 📧 邮箱验证失败
+- 检查 settings.yaml 中的 IMAP 设置
+- 检查邮箱提供商的安全设置
+- Gmail 用户确保已启用应用专用密码
 
-#### 🧩 Captcha Problems
-- Verify API key validity
-- Check service balance
-- Ensure selected service is operational
+#### 🧩 验证码问题
+- 自动本地识别
+- 自动本地识别
+- 自动本地识别
 
-#### 🌐 Proxy Issues
-- Validate proxy format
-- Check proxy functionality
-- Ensure proxy authentication is correct
-
-## 📞 Support
-
-Join our Telegram community for support:
-- 📢 Channel: [JamBitPY](https://t.me/JamBitPY)
-- 💬 Chat: [JamBitChat](https://t.me/JamBitChat)
+#### 🌐  代理问题
+- 验证代理格式
+- 检查代理是否可用
+- 确保代理认证信息正确
